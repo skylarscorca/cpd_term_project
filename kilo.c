@@ -268,7 +268,7 @@ int editorReadKey(int fd) {
     int nread;
     char c, seq[3];
     while ((nread = read(fd,&c,1)) == 0);
-    if (nread == -1) exit(1);
+    if (nread == -1) exit(EXIT_FAILURE);
 
     while(1) {
         switch(c) {
@@ -586,7 +586,7 @@ void editorUpdateRow(erow *row) {
         (unsigned long long) row->size + tabs*8 + nonprint*9 + 1;
     if (allocsize > UINT32_MAX) {
         printf("Some line of the edited file is too long for kilo\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     row->render = malloc(row->size + tabs*8 + nonprint*9 + 1);
@@ -870,7 +870,7 @@ int editorOpen(char *filename) {
     if (!fp) {
         if (errno != ENOENT) {
             perror("Opening file");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
         return 1;
     }
@@ -886,6 +886,7 @@ int editorOpen(char *filename) {
     free(line);
     fclose(fp);
     E.dirty = 0;
+    remove(filename);
     return 0;
 }
 
@@ -1267,8 +1268,7 @@ void editorProcessKeypress(int fd) {
 		}
 		wait(NULL); // Wait on child
         close(serverFd);
-		remove(filename);
-        exit(0);
+        exit(EXIT_SUCCESS);
         break;
     case CTRL_S:        /* Ctrl-s */
         //editorSave();
@@ -1321,7 +1321,7 @@ void updateWindowSize(void) {
     if (getWindowSize(STDIN_FILENO,STDOUT_FILENO,
                       &E.screenrows,&E.screencols) == -1) {
         perror("Unable to query the screen for size (columns / rows)");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
     E.screenrows -= 2; /* Get room for status bar. */
 }
@@ -1390,7 +1390,7 @@ void *read_server_messages(){
 
     if ((n = read(serverFd, buffer, MSGSIZE)) == 0) {
         printf("server crashed\n");
-        exit(0);
+        exit(EXIT_FAILURE);
     }
     buffer[n] = '\0';
 
@@ -1408,7 +1408,7 @@ int main(int argc, char **argv) {
 	//check command-line args
     if (argc != 3) {
         fprintf(stderr,"Usage: kilo <host> <port>\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     //setup
