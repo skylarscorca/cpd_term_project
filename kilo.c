@@ -61,6 +61,7 @@
 #define _POSIX_SOURCE
 #define MSGSIZE 1024
 static int serverFd;
+static pthread_t read_thread;
 
 /* Temporary File */
 char filename[20] = "transfer";
@@ -1267,6 +1268,7 @@ void editorProcessKeypress(int fd) {
 			execvp("clear", args); // Kills child
 		}
 		wait(NULL); // Wait on child
+        //pthread_kill(read_thread, SIGINT);
         close(serverFd);
         exit(EXIT_SUCCESS);
         break;
@@ -1408,8 +1410,6 @@ void *read_server_messages(){
 
 //main program of text-editor client
 int main(int argc, char **argv) {
-    pthread_t read_thread;
-
 	//check command-line args
     if (argc != 3) {
         fprintf(stderr,"Usage: kilo <host> <port>\n");
