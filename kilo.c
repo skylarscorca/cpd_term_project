@@ -61,6 +61,7 @@
 #define _POSIX_SOURCE
 #define MSGSIZE 1024
 static int serverFd;
+static pthread_t read_thread;
 
 /* Temporary File */
 char filename[20] = "transfer";
@@ -1267,6 +1268,7 @@ void editorProcessKeypress(int fd) {
 			execvp("clear", args); // Kills child
 		}
 		wait(NULL); // Wait on child
+        //pthread_kill(read_thread, SIGINT);
         close(serverFd);
         exit(EXIT_SUCCESS);
         break;
@@ -1373,6 +1375,7 @@ void receiveFile(){
 
 void handle_server_message(char *msg){
     char cmd[MSGSIZE], row[MSGSIZE], buffer[MSGSIZE];
+    FILE *debug = fopen("debug", "a");
     int i;
     
     //get command
@@ -1429,6 +1432,8 @@ void handle_server_message(char *msg){
 	if (!strcmp(cmd, "dc")){
 		
 	}
+    fprintf(debug, "cmd is %s\n", cmd);
+    fclose(debug);
 }
 
 void *read_server_messages(){
@@ -1437,14 +1442,14 @@ void *read_server_messages(){
 
     pthread_detach(pthread_self());
 
-    if ((n = read(serverFd, buffer, MSGSIZE)) == 0) {
-        printf("server crashed\n");
-        exit(EXIT_FAILURE);
+    while((n = read(serverFd, buffer, MSGSIZE)) != 0){
+        buffer[n] = '\0';
+
+        handle_server_message(buffer);
     }
-    buffer[n] = '\0';
 
-    handle_server_message(buffer);
-
+    printf("server crashed\n");
+    exit(EXIT_FAILURE);
     return NULL;
 }
 
@@ -1452,8 +1457,6 @@ void *read_server_messages(){
 
 //main program of text-editor client
 int main(int argc, char **argv) {
-    pthread_t read_thread;
-
 	//check command-line args
     if (argc != 3) {
         fprintf(stderr,"Usage: kilo <host> <port>\n");
