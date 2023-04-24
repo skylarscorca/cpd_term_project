@@ -1374,7 +1374,7 @@ void receiveFile(){
 }
 
 void handle_server_message(char *msg){
-    char cmd[MSGSIZE];
+    char cmd[MSGSIZE], row[MSGSIZE], buffer[MSGSIZE];
     FILE *debug = fopen("debug", "a");
     int i;
     
@@ -1383,9 +1383,56 @@ void handle_server_message(char *msg){
         if(msg[i] == ':'){break;} //stop reading when we encounter colon
         cmd[i] = msg[i];
     }
-
+	cmd[i+1] = '\0';
+	
+	// Get row
+	int div = i + 1;
+	for (i; i < MSGSIZE; i++){
+		if (msg[i] == ':' || msg[i] == '\0') { break; }
+		row[i - div] = msg[i];
+	}
+	row[i+1 - div] = '\0';
+	int r = atoi(row);
+	
+	// Handle delete row - only requires row
+	if (!strcmp(cmd, "dr")){
+		// All stuff needed is here
+		return;
+	}
+	
+	// Fill buffer with remaining chars
+	div = i + 1;
+	for (i; i < MSGSIZE; i++){
+		if (msg[i] == '\0') { break; }
+		buffer[i - div] = msg[i];
+	}
+	buffer[i+1 - div] = '\0';
+	
+	// Handle inserting newline
+	if (!strcmp(cmd, "ir")){
+		// Everything needed is here
+		return;
+	}
+	
+	// Handle appending a string
+	if (!strcmp(cmd, "as")){
+		// Everything needed is here
+		return;		
+	}
+	
+	// Convert buffer to int - buffer represents column index
+	int col = atoi(buffer);
+	
+	// Handle inserting character
+	if (!strcmp(cmd, "ic")){
+		
+	}
+	
+	// Handle deleting character
+	if (!strcmp(cmd, "dc")){
+		
+	}
     fprintf(debug, "cmd is %s\n", cmd);
-
     fclose(debug);
 }
 
