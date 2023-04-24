@@ -1401,6 +1401,7 @@ void handle_server_message(char *msg){
     }
     arg2[j] = '\0';
     //get arg3
+    //Note: sometimes arg3 isn't copied correctly
     for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
         //stop when we encounter colon or null
         if(msg[i] == ':' || msg[i] == '\0'){break;}
@@ -1412,19 +1413,24 @@ void handle_server_message(char *msg){
     fprintf(debug, "tokenized message is %s %s %s %s\n", cmd, arg1, arg2, arg3);
 
     if(strcmp(cmd, "dc") == 0){
-
+        int row_index = atoi(arg1);
+        int char_index = atoi(arg2);
     }
     else if(strcmp(cmd, "as") == 0){
-        
+        int row_index = atoi(arg1);
+        char * new_string = arg2;
     }
     else if(strcmp(cmd, "ic") == 0){
-        
+        int row_index = atoi(arg1);
+        int char_index = atoi(arg2);
+        char new_char = arg3[0];
     }
     else if(strcmp(cmd, "dr") == 0){
-        
+        int row_index = atoi(arg1);
     }
     else if(strcmp(cmd, "ir") == 0){
-        
+        int row_index = atoi(arg1);
+        char * new_string = arg2;
     }
 
     fclose(debug);
