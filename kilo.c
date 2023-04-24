@@ -1268,7 +1268,7 @@ void editorProcessKeypress(int fd) {
 			execvp("clear", args); // Kills child
 		}
 		wait(NULL); // Wait on child
-        //pthread_kill(read_thread, SIGINT);
+        //pthread_kill(read_thread, SIGINT); //this ended up making it break faster
         close(serverFd);
         exit(EXIT_SUCCESS);
         break;
