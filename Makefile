@@ -10,4 +10,4 @@ server: server.cpp
 	$(C+) server server.cpp
 
 clean:
-	rm -f kilo server transfer
+	rm -f kilo server debug

@@ -1373,6 +1373,7 @@ void receiveFile(){
 
 void handle_server_message(char *msg){
     char cmd[MSGSIZE];
+    FILE *debug = fopen("debug", "a");
     int i;
     
     //get command
@@ -1380,6 +1381,10 @@ void handle_server_message(char *msg){
         if(msg[i] == ':'){break;} //stop reading when we encounter colon
         cmd[i] = msg[i];
     }
+
+    fprintf(debug, "cmd is %s\n", cmd);
+
+    fclose(debug);
 }
 
 void *read_server_messages(){
