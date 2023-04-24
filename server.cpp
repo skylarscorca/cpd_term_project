@@ -20,29 +20,25 @@
 #include <sstream>
 using namespace std;
 
+string filename = "test";
+vector<string> lines;
 vector<int> users;
 
 //readFile - reads lines in file into the data structure lines
-vector<string> readFile(){
+void readFile(){
 	string line;
-	vector<string> lines;
-	ifstream file("test");
+	ifstream file(filename);
 	while (getline(file, line)){
 		lines.push_back(line);
 	}
-	return lines;
 }
 
 //sendFile - send file line-by-line to a client at fd
-void sendFile(int fd, vector<string> lines){
-	vector<string>::iterator i;
-
+void sendFile(int fd){
 	send(fd, (void*)"Start Transfer", 1024, 0);
 
-	//this is the same as the loop that is commented out
 	for(string msg : lines){
 		char buffer[1024];
-
 		send(fd, msg.c_str(), msg.length(), 0);
 		read(fd, buffer, 1024);
 	}
@@ -68,7 +64,7 @@ void *threadFunc(void *args){
 		}
 		else if (line == "get"){
 			cout << "Get Received" << endl;
-			sendFile(clientFd, readFile());	
+			sendFile(clientFd);	
 			copied = true;
 		}
 		else if(copied){
@@ -76,30 +72,43 @@ void *threadFunc(void *args){
 
 			//get update type
             bool validCMD = true;
-            string cmd;
+            string cmd, row, col, text;
 			getline(ss, cmd, ':');
-
+			
+			// Update lines with changes
 			if(cmd == "ir"){
-				cout << "ir received\n" << line << endl;
-			}
-			else if(cmd == "dr"){
-				cout << "dr received\n" << line << endl;
-			}
-			else if(cmd == "ic"){
-				cout << "ic received\n" << line << endl;
-			}
-			else if(cmd == "as"){
-				cout << "as received\n" << line << endl;
-			}
-			else if(cmd == "dc"){
-				cout << "dc received\n" << line << endl;
-			}
-			else{
+				getline(ss, row, ':');
+				getline(ss, text, ':');
+				lines.insert(lines.begin() + stoi(row), text);
+				lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));
+			} else if(cmd == "dr"){
+				getline(ss, row, ':');
+				lines.erase(lines.begin() + stoi(row));
+			} else if(cmd == "ic"){
+				getline(ss, row, ':');
+				getline(ss, col, ':');
+				getline(ss, text, ':');
+				lines[stoi(row)].insert(stoi(col), text);
+			} else if(cmd == "as"){
+				getline(ss, row, ':');
+				getline(ss, text, ':');
+				lines[stoi(row)].append(text);
+			} else if(cmd == "dc"){
+				getline(ss, row, ':');
+				getline(ss, col, ':');
+				lines[stoi(row)].erase(stoi(col), 1);
+			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
 			}
 
             if(validCMD){
+				// Update master file
+				ofstream file(filename);
+				for (string line : lines){
+					file << line << endl;
+				}
+				file.close();
                 // Send update messages
                 for(auto user : users){
                     if(user == clientFd) continue;
@@ -122,6 +131,7 @@ int main(int argc, char *argv[]){
 		cerr << "Usage: <server> <port>\n";
 		return 1;
 	}
+	readFile();
 	stringstream stream(argv[1]);
 	int port;
 	stream >> port;
