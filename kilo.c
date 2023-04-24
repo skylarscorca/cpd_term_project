@@ -61,6 +61,7 @@
 #define _POSIX_SOURCE
 #define MSGSIZE 1024
 static int serverFd;
+static pthread_t read_thread;
 
 /* Temporary File */
 char filename[20] = "transfer";
@@ -1267,6 +1268,7 @@ void editorProcessKeypress(int fd) {
 			execvp("clear", args); // Kills child
 		}
 		wait(NULL); // Wait on child
+        //pthread_kill(read_thread, SIGINT);
         close(serverFd);
         exit(EXIT_SUCCESS);
         break;
@@ -1372,7 +1374,8 @@ void receiveFile(){
 }
 
 void handle_server_message(char *msg){
-    char cmd[MSGSIZE];
+    char cmd[MSGSIZE], row[MSGSIZE], buffer[MSGSIZE];
+    FILE *debug = fopen("debug", "a");
     int i;
     
     //get command
@@ -1380,6 +1383,57 @@ void handle_server_message(char *msg){
         if(msg[i] == ':'){break;} //stop reading when we encounter colon
         cmd[i] = msg[i];
     }
+	cmd[i+1] = '\0';
+	
+	// Get row
+	int div = i + 1;
+	for (i; i < MSGSIZE; i++){
+		if (msg[i] == ':' || msg[i] == '\0') { break; }
+		row[i - div] = msg[i];
+	}
+	row[i+1 - div] = '\0';
+	int r = atoi(row);
+	
+	// Handle delete row - only requires row
+	if (!strcmp(cmd, "dr")){
+		// All stuff needed is here
+		return;
+	}
+	
+	// Fill buffer with remaining chars
+	div = i + 1;
+	for (i; i < MSGSIZE; i++){
+		if (msg[i] == '\0') { break; }
+		buffer[i - div] = msg[i];
+	}
+	buffer[i+1 - div] = '\0';
+	
+	// Handle inserting newline
+	if (!strcmp(cmd, "ir")){
+		// Everything needed is here
+		return;
+	}
+	
+	// Handle appending a string
+	if (!strcmp(cmd, "as")){
+		// Everything needed is here
+		return;		
+	}
+	
+	// Convert buffer to int - buffer represents column index
+	int col = atoi(buffer);
+	
+	// Handle inserting character
+	if (!strcmp(cmd, "ic")){
+		
+	}
+	
+	// Handle deleting character
+	if (!strcmp(cmd, "dc")){
+		
+	}
+    fprintf(debug, "cmd is %s\n", cmd);
+    fclose(debug);
 }
 
 void *read_server_messages(){
@@ -1388,14 +1442,14 @@ void *read_server_messages(){
 
     pthread_detach(pthread_self());
 
-    if ((n = read(serverFd, buffer, MSGSIZE)) == 0) {
-        printf("server crashed\n");
-        exit(EXIT_FAILURE);
+    while((n = read(serverFd, buffer, MSGSIZE)) != 0){
+        buffer[n] = '\0';
+
+        handle_server_message(buffer);
     }
-    buffer[n] = '\0';
 
-    handle_server_message(buffer);
-
+    printf("server crashed\n");
+    exit(EXIT_FAILURE);
     return NULL;
 }
 
@@ -1403,8 +1457,6 @@ void *read_server_messages(){
 
 //main program of text-editor client
 int main(int argc, char **argv) {
-    pthread_t read_thread;
-
 	//check command-line args
     if (argc != 3) {
         fprintf(stderr,"Usage: kilo <host> <port>\n");
