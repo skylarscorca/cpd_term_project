@@ -117,6 +117,13 @@ void *threadFunc(void *args){
             }
 		}
 	}
+
+    for(unsigned i = 0; i < users.size(); ++i){
+        if(users[i] == clientFd) users.erase(users.begin()+i);
+    }
+    close(clientFd);
+    pthread_exit(NULL);
+
 	return NULL;
 }
 
@@ -184,7 +191,7 @@ int main(int argc, char *argv[]){
 	len = sizeof(cliAddr);
 	while (true){
 		users.push_back(accept(serverFd, (struct sockaddr *)&serverAddr, &len));
-
+        cout << "# of connected users: " << users.size() << endl;
 		// Create thread to deal with client
 		pthread_t thread;
 		pthread_create(&thread, NULL, threadFunc, (void *)&users[users.size()-1]);
