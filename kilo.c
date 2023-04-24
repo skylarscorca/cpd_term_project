@@ -1393,14 +1393,14 @@ void *read_server_messages(){
 
     pthread_detach(pthread_self());
 
-    if ((n = read(serverFd, buffer, MSGSIZE)) == 0) {
-        printf("server crashed\n");
-        exit(EXIT_FAILURE);
+    while((n = read(serverFd, buffer, MSGSIZE)) != 0){
+        buffer[n] = '\0';
+
+        handle_server_message(buffer);
     }
-    buffer[n] = '\0';
 
-    handle_server_message(buffer);
-
+    printf("server crashed\n");
+    exit(EXIT_FAILURE);
     return NULL;
 }
 
