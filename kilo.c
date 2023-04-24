@@ -1374,17 +1374,62 @@ void receiveFile(){
 }
 
 void handle_server_message(char *msg){
-    char cmd[MSGSIZE], row[MSGSIZE], buffer[MSGSIZE];
+    char cmd[MSGSIZE], arg1[MSGSIZE], arg2[MSGSIZE], arg3[MSGSIZE];
     FILE *debug = fopen("debug", "a");
-    int i;
+    int i, j;
     
+    /*-- tokenize --*/
     //get command
-    for(i = 0; i < MSGSIZE; ++i){
-        if(msg[i] == ':'){break;} //stop reading when we encounter colon
-        cmd[i] = msg[i];
+    for(i = 0, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        cmd[j] = msg[i];
     }
-	cmd[i+1] = '\0';
+    cmd[j] = '\0';
+    //get arg1
+    for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        arg1[j] = msg[i];
+    }
+    arg1[j] = '\0';
+    //get arg2
+    for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        arg2[j] = msg[i];
+    }
+    arg2[j] = '\0';
+    //get arg3
+    for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        arg3[j] = msg[i];
+    }
+    arg3[j] = '\0';
+
+    fprintf(debug, "message is %s\n", msg);
+    fprintf(debug, "tokenized message is %s %s %s %s\n", cmd, arg1, arg2, arg3);
+
+    if(strcmp(cmd, "dc") == 0){
+
+    }
+    else if(strcmp(cmd, "as") == 0){
+        
+    }
+    else if(strcmp(cmd, "ic") == 0){
+        
+    }
+    else if(strcmp(cmd, "dr") == 0){
+        
+    }
+    else if(strcmp(cmd, "ir") == 0){
+        
+    }
+
+    fclose(debug);
 	
+/*
 	// Get row
 	int div = i + 1;
 	for (i; i < MSGSIZE; i++){
@@ -1432,8 +1477,7 @@ void handle_server_message(char *msg){
 	if (!strcmp(cmd, "dc")){
 		
 	}
-    fprintf(debug, "cmd is %s\n", cmd);
-    fclose(debug);
+*/
 }
 
 void *read_server_messages(){
