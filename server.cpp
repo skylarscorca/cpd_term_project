@@ -80,7 +80,9 @@ void *threadFunc(void *args){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
 				lines.insert(lines.begin() + stoi(row), text);
-				lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));
+				if (text != ""){
+					lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));	
+				}
 			} else if(cmd == "dr"){
 				getline(ss, row, ':');
 				lines.erase(lines.begin() + stoi(row));
