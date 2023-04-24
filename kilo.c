@@ -628,11 +628,6 @@ void editorInsertRow(int at, char *s, size_t len) {
     editorUpdateRow(E.row+at);
     E.numrows++;
     E.dirty++;
-
-/*     //setup server message
-    char msg[MSGSIZE];
-    sprintf(msg, "ir:%d:%s", at, s);
-    send(serverFd, msg, MSGSIZE, 0); */
 }
 
 /* Free row's heap allocated stuff. */
@@ -777,7 +772,6 @@ void editorInsertChar(int c) {
 
 /* Inserting a newline is slightly complex as we have to handle inserting a
  * newline in the middle of a line, splitting the line as needed. */
-//don't need to make a server message here since we call editorInsertRow
 void editorInsertNewline(bool sendToServer) {
     int filerow = E.rowoff+E.cy;
     int filecol = E.coloff+E.cx;
@@ -1364,7 +1358,11 @@ void initEditor(void) {
     signal(SIGWINCH, handleSigWinCh);
 }
 
-/* ========================= Communication with Server  ======================== */
+/* ========================= Helper Functions ======================== */
+
+
+
+/* ========================= Communication with Server ======================== */
 
 void receiveFile(){
 	ssize_t n;
@@ -1429,76 +1427,41 @@ void handle_server_message(char *msg){
 
     if(strcmp(cmd, "dc") == 0){
         int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
         int char_index = atoi(arg2);
+        editorRowDelChar(row, char_index, false);
+        editorUpdateRow(row);
     }
     else if(strcmp(cmd, "as") == 0){
         int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
         char * new_string = arg2;
+        editorRowAppendString(row, new_string, strlen(new_string), false);
+        editorUpdateRow(row);
     }
     else if(strcmp(cmd, "ic") == 0){
         int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
         int char_index = atoi(arg2);
         char new_char = arg3[0];
+        editorRowInsertChar(row, char_index, new_char, false);
+        editorUpdateRow(row);
     }
     else if(strcmp(cmd, "dr") == 0){
         int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
+        editorDelRow(row_index, false);
+        editorUpdateRow(row);
     }
     else if(strcmp(cmd, "ir") == 0){
         int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
         char * new_string = arg2;
+        editorInsertNewline(false);
+        editorUpdateRow(row);
     }
 
     fclose(debug);
-	
-/*
-	// Get row
-	int div = i + 1;
-	for (i; i < MSGSIZE; i++){
-		if (msg[i] == ':' || msg[i] == '\0') { break; }
-		row[i - div] = msg[i];
-	}
-	row[i+1 - div] = '\0';
-	int r = atoi(row);
-	
-	// Handle delete row - only requires row
-	if (!strcmp(cmd, "dr")){
-		// All stuff needed is here
-		return;
-	}
-	
-	// Fill buffer with remaining chars
-	div = i + 1;
-	for (i; i < MSGSIZE; i++){
-		if (msg[i] == '\0') { break; }
-		buffer[i - div] = msg[i];
-	}
-	buffer[i+1 - div] = '\0';
-	
-	// Handle inserting newline
-	if (!strcmp(cmd, "ir")){
-		// Everything needed is here
-		return;
-	}
-	
-	// Handle appending a string
-	if (!strcmp(cmd, "as")){
-		// Everything needed is here
-		return;		
-	}
-	
-	// Convert buffer to int - buffer represents column index
-	int col = atoi(buffer);
-	
-	// Handle inserting character
-	if (!strcmp(cmd, "ic")){
-		
-	}
-	
-	// Handle deleting character
-	if (!strcmp(cmd, "dc")){
-		
-	}
-*/
 }
 
 void *read_server_messages(){
