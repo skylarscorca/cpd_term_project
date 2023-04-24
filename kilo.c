@@ -805,15 +805,19 @@ void editorInsertNewline(bool sendToServer) {
         editorInsertRow(filerow,"",0);
 
         //server message
-        sprintf(msg, "ir:%d:%s", filerow, "");
-        send(serverFd, msg, MSGSIZE, 0);
+        if(sendToServer){
+            sprintf(msg, "ir:%d:%s", filerow, "");
+            send(serverFd, msg, MSGSIZE, 0);
+        }
     } else {
         /* We are in the middle of a line. Split it between two rows. */
         editorInsertRow(filerow+1,row->chars+filecol,row->size-filecol);
 
         //server message
-        sprintf(msg, "ir:%d:%s", filerow+1, row->chars+filecol);
-        send(serverFd, msg, MSGSIZE, 0);
+        if(sendToServer){
+            sprintf(msg, "ir:%d:%s", filerow+1, row->chars+filecol);
+            send(serverFd, msg, MSGSIZE, 0);
+        }
 
         row = &E.row[filerow];
         row->chars[filecol] = '\0';
