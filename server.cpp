@@ -79,33 +79,65 @@ void *threadFunc(void *args){
 			
 			// Update lines with changes
 			if(cmd == "ir"){
+				cout << "in ir case\n";
 				getline(ss, row, ':');
 				getline(ss, text, ':');
-				lines.insert(lines.begin() + stoi(row), text);
+
+				//if not in structure yet, add a row to the end
+				if(stoi(row) >= lines.size()){
+					lines.push_back(text);
+				}
+				else{
+					lines.insert(lines.begin() + stoi(row), text);
+				}
 
 				//i think we need to take this part out. i made it so that
 				//in this case the client will send an "insert character"
 				//with the null character in the location where the row
 				//was split. so this logic should be moved to 'ic'
+				/*
 				if (text != ""){
 					lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));	
 				}
+				*/
 			} else if(cmd == "dr"){
+				cout << "in dr case\n";
 				getline(ss, row, ':');
-				lines.erase(lines.begin() + stoi(row));
+				if(stoi(row) >= lines.size()){
+					cout << "can't erase out of range row\n";
+				}
+				else{
+					lines.erase(lines.begin() + stoi(row));
+				}
 			} else if(cmd == "ic"){
+				cout << "in ic case\n";
 				getline(ss, row, ':');
 				getline(ss, col, ':');
 				getline(ss, text, ':');
+
+				//if not in structure yet, add a row
+				if(stoi(row) >= lines.size()){
+					lines.push_back(text);
+				}
+
+				//pad with spaces if larger than current size
+				//shorten string if insertion character is null
+				if(stoi(col) > lines[stoi(row)].size() || text[0] == '\0'){
+					lines[stoi(row)].resize(stoi(col), ' ');
+				}
 				lines[stoi(row)].insert(stoi(col), text);
 			} else if(cmd == "as"){
+				cout << "in as case\n";
 				getline(ss, row, ':');
 				getline(ss, text, ':');
 				lines[stoi(row)].append(text);
 			} else if(cmd == "dc"){
+				cout << "in dc case\n";
 				getline(ss, row, ':');
 				getline(ss, col, ':');
-				lines[stoi(row)].erase(stoi(col), 1);
+				
+				//The first character in str is denoted by a value of 0 (not 1).
+				lines[stoi(row)].erase(stoi(col), 0);
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
