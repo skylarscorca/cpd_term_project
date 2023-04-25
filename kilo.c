@@ -1473,6 +1473,7 @@ void handle_server_message(char *msg){
         editorUpdateRow(row);
     }
 
+    editorRefreshScreen();
     fclose(debug);
 }
 
