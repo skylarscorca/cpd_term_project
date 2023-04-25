@@ -137,7 +137,7 @@ void handleSigInt(int unused __attribute__((unused))){
 //main server program
 int main(int argc, char *argv[]){
 	if (argc != 2){
-		cerr << "Usage: <server> <port>\n";
+		cerr << "Usage: server <port>\n";
 		return 1;
 	}
 	readFile();
