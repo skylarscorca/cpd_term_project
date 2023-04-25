@@ -122,8 +122,6 @@ struct editorConfig {
     struct editorSyntax *syntax;    /* Current syntax highlight, or NULL. */
 };
 
-//Note: we may want to add a few fields to the erow and editorConfig structs
-
 static struct editorConfig E;
 
 enum KEY_ACTION{
@@ -213,7 +211,6 @@ struct editorSyntax HLDB[] = {
 #define HLDB_ENTRIES (sizeof(HLDB)/sizeof(HLDB[0]))
 
 /* ======================= Low level terminal handling ====================== */
-//Note: probably don't need to edit these
 
 static struct termios orig_termios; /* In order to restore at exit.*/
 
@@ -378,7 +375,6 @@ failed:
 }
 
 /* ====================== Syntax highlight color scheme  ==================== */
-//Note: probably don't need to edit these
 
 int is_separator(int c) {
     return c == '\0' || isspace(c) || strchr(",.()+-/*=~%[];",c) != NULL;
@@ -568,10 +564,6 @@ void editorSelectSyntaxHighlight(char *filename) {
 }
 
 /* ======================= Editor rows implementation ======================= */
-//Note: probably want to edit these. perhaps at the end of an update function, we call another 
-// function to send an update message to the server.
-//Note: we can copy the logic from these functions to allow for editing after receuving an
-// update message from the server.
 
 /* Update the rendered version and the syntax highlight of a row. */
 void editorUpdateRow(erow *row) {
@@ -921,8 +913,6 @@ writeerr:
 }
 
 /* ============================= Terminal update ============================ */
-//Note: probably don't need to edit these
-
 /* We define a very simple "append buffer" structure, that is an heap
  * allocated string where we can append to. This is useful in order to
  * write all the escape sequences in a buffer and flush them to the standard
@@ -1078,7 +1068,6 @@ void editorSetStatusMessage(const char *fmt, ...) {
 }
 
 /* =============================== Find mode ================================ */
-//Note: probably don't need to edit these
 
 #define KILO_QUERY_LEN 256
 
@@ -1178,7 +1167,6 @@ void editorFind(int fd) {
 }
 
 /* ========================= Editor events handling  ======================== */
-//Note: we probably don't need to edit these
 
 /* Handle cursor position change because arrow keys were pressed. */
 void editorMoveCursor(int key) {
