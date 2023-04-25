@@ -782,21 +782,14 @@ void editorInsertChar(int c) {
 
 /* Inserting a newline is slightly complex as we have to handle inserting a
  * newline in the middle of a line, splitting the line as needed. */
-void editorInsertNewline(bool sendToServer) {
+void editorInsertNewline() {
     int filerow = E.rowoff+E.cy;
     int filecol = E.coloff+E.cx;
     erow *row = (filerow >= E.numrows) ? NULL : &E.row[filerow];
-    char msg[MSGSIZE];
 
     if (!row) {
         if (filerow == E.numrows) {
             editorInsertRow(filerow,"",0,true);
-            
-/*             //server message
-            if(sendToServer){
-                sprintf(msg, "ir:%d:%s", filerow, "");
-                send(serverFd, msg, MSGSIZE, 0);
-            } */
             
             goto fixcursor;
         }
@@ -808,25 +801,16 @@ void editorInsertNewline(bool sendToServer) {
     if (filecol == 0) {
         editorInsertRow(filerow,"",0,true);
 
-/*         //server message
-        if(sendToServer){
-            sprintf(msg, "ir:%d:%s", filerow, "");
-            send(serverFd, msg, MSGSIZE, 0);
-        } */
     } else {
         /* We are in the middle of a line. Split it between two rows. */
         editorInsertRow(filerow+1,row->chars+filecol,row->size-filecol,true);
 
-/*         //server message
-        if(sendToServer){
-            sprintf(msg, "ir:%d:%s", filerow+1, row->chars+filecol);
-            send(serverFd, msg, MSGSIZE, 0);
-        } */
-
         row = &E.row[filerow];
         editorRowInsertChar(row, filecol, '\0', true);
-        //row->chars[filecol] = '\0'; //NOTE: need to send this case as a message to server
-        //row->size = filecol;
+            //this is the old code. i had to write it as a function call so that
+            //the update would be reflected on other clients
+            //row->chars[filecol] = '\0';
+            //row->size = filecol;
         editorUpdateRow(row);
     }
 
@@ -1276,7 +1260,7 @@ void editorProcessKeypress(int fd) {
     int c = editorReadKey(fd);
     switch(c) {
     case ENTER:         /* Enter */
-        editorInsertNewline(true);
+        editorInsertNewline();
         break;
     case CTRL_C:        /* Ctrl-c */
         /* We ignore ctrl-c, it can't be so simple to lose the changes
