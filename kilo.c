@@ -610,7 +610,7 @@ void editorUpdateRow(erow *row) {
 
 /* Insert a row at the specified position, shifting the other rows on the bottom
  * if required. */
-void editorInsertRow(int at, char *s, size_t len) {
+void editorInsertRow(int at, char *s, size_t len, bool sendToServer) {
     if (at > E.numrows) return;
     E.row = realloc(E.row,sizeof(erow)*(E.numrows+1));
     if (at != E.numrows) {
@@ -628,6 +628,13 @@ void editorInsertRow(int at, char *s, size_t len) {
     editorUpdateRow(E.row+at);
     E.numrows++;
     E.dirty++;
+
+    //setup server message
+    if(sendToServer){
+        char msg[MSGSIZE];
+        sprintf(msg, "ir:%d:%s", at, s);
+        send(serverFd, msg, MSGSIZE, 0);
+    }
 }
 
 /* Free row's heap allocated stuff. */
@@ -759,7 +766,7 @@ void editorInsertChar(int c) {
      * logical representaion of the file, add enough empty rows as needed. */
     if (!row) {
         while(E.numrows <= filerow)
-            editorInsertRow(E.numrows,"",0);
+            editorInsertRow(E.numrows,"",0,true);
     }
     row = &E.row[filerow];
     editorRowInsertChar(row,filecol,c,true);
@@ -780,13 +787,13 @@ void editorInsertNewline(bool sendToServer) {
 
     if (!row) {
         if (filerow == E.numrows) {
-            editorInsertRow(filerow,"",0);
+            editorInsertRow(filerow,"",0,true);
             
-            //server message
+/*             //server message
             if(sendToServer){
                 sprintf(msg, "ir:%d:%s", filerow, "");
                 send(serverFd, msg, MSGSIZE, 0);
-            }
+            } */
             
             goto fixcursor;
         }
@@ -796,25 +803,25 @@ void editorInsertNewline(bool sendToServer) {
      * think it's just over the last character. */
     if (filecol >= row->size) filecol = row->size;
     if (filecol == 0) {
-        editorInsertRow(filerow,"",0);
+        editorInsertRow(filerow,"",0,true);
 
-        //server message
+/*         //server message
         if(sendToServer){
             sprintf(msg, "ir:%d:%s", filerow, "");
             send(serverFd, msg, MSGSIZE, 0);
-        }
+        } */
     } else {
         /* We are in the middle of a line. Split it between two rows. */
-        editorInsertRow(filerow+1,row->chars+filecol,row->size-filecol);
+        editorInsertRow(filerow+1,row->chars+filecol,row->size-filecol,true);
 
-        //server message
+/*         //server message
         if(sendToServer){
             sprintf(msg, "ir:%d:%s", filerow+1, row->chars+filecol);
             send(serverFd, msg, MSGSIZE, 0);
-        }
+        } */
 
         row = &E.row[filerow];
-        row->chars[filecol] = '\0';
+        row->chars[filecol] = '\0'; //NOTE: need to send this case as a message to server
         row->size = filecol;
         editorUpdateRow(row);
     }
@@ -891,7 +898,7 @@ int editorOpen(char *filename) {
     while((linelen = getline(&line,&linecap,fp)) != -1) {
         if (linelen && (line[linelen-1] == '\n' || line[linelen-1] == '\r'))
             line[--linelen] = '\0';
-        editorInsertRow(E.numrows,line,linelen);
+        editorInsertRow(E.numrows,line,linelen,false);
     }
     free(line);
     fclose(fp);
@@ -1458,7 +1465,7 @@ void handle_server_message(char *msg){
         int row_index = atoi(arg1);
         erow * row = E.row + row_index;
         char * new_string = arg2;
-        editorInsertNewline(false);
+        editorInsertRow(row_index, new_string, strlen(new_string), false);
         editorUpdateRow(row);
     }
 
