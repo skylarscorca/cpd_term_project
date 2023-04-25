@@ -20,6 +20,8 @@
 #include <sstream>
 using namespace std;
 
+#define MSGSIZE 1024
+
 string filename = "test";
 vector<string> lines;
 vector<int> users;
@@ -35,28 +37,28 @@ void readFile(){
 
 //sendFile - send file line-by-line to a client at fd
 void sendFile(int fd){
-	send(fd, (void*)"Start Transfer", 1024, 0);
+	send(fd, (void*)"Start Transfer", MSGSIZE, 0);
 
 	for(string msg : lines){
-		char buffer[1024];
+		char buffer[MSGSIZE];
 		send(fd, msg.c_str(), msg.length(), 0);
-		read(fd, buffer, 1024);
+		read(fd, buffer, MSGSIZE);
 	}
 
-	send(fd, (void*)"End Transfer", 1024, 0);
+	send(fd, (void*)"End Transfer", MSGSIZE, 0);
 }
 
 //threadFunc - thread function to read any messages from a client
 void *threadFunc(void *args){
 	ssize_t n;
 	int clientFd = *(int*)args;
-	char buffer[1024];
+	char buffer[MSGSIZE];
 	bool copied = false;
 
 	pthread_detach(pthread_self());
 
 	// Read until disconnection
-	while ((n = read(clientFd, buffer, 1024)) > 0){
+	while ((n = read(clientFd, buffer, MSGSIZE)) > 0){
 		string line(buffer);
 		
 		if (line == "exit"){
@@ -80,6 +82,11 @@ void *threadFunc(void *args){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
 				lines.insert(lines.begin() + stoi(row), text);
+
+				//i think we need to take this part out. i made it so that
+				//in this case the client will send an "insert character"
+				//with the null character in the location where the row
+				//was split. so this logic should be moved to 'ic'
 				if (text != ""){
 					lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));	
 				}
@@ -114,7 +121,7 @@ void *threadFunc(void *args){
                 // Send update messages
                 for(auto user : users){
                     if(user == clientFd) continue;
-                    write(user, buffer, 1024);
+                    write(user, buffer, MSGSIZE);
                 }
             }
 		}
@@ -178,10 +185,10 @@ int main(int argc, char *argv[]){
 	}
 
 	// Get name and port assigned to server
-	char *name = new char[1024];
+	char *name = new char[MSGSIZE];
 	struct sockaddr_in infoAddr;
 	socklen_t len = sizeof(infoAddr);
-	gethostname(name, 1024);
+	gethostname(name, MSGSIZE);
 	getsockname(serverFd, (struct sockaddr *)&infoAddr, &len);
 
 	// Report name and port
