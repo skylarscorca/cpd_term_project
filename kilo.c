@@ -1453,6 +1453,7 @@ void handle_server_message(char *msg){
         editorDelRow(row_index, false);
         editorUpdateRow(row);
     }
+    //insert row doesn't work yet
     else if(strcmp(cmd, "ir") == 0){
         int row_index = atoi(arg1);
         erow * row = E.row + row_index;
