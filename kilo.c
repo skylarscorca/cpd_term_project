@@ -711,6 +711,9 @@ void editorRowInsertChar(erow *row, int at, int c, bool sendToServer) {
         row->size++;
     }
     row->chars[at] = c;
+    if(c == '\0'){
+        row->size = at;
+    }
     editorUpdateRow(row);
     E.dirty++;
 
@@ -821,8 +824,9 @@ void editorInsertNewline(bool sendToServer) {
         } */
 
         row = &E.row[filerow];
-        row->chars[filecol] = '\0'; //NOTE: need to send this case as a message to server
-        row->size = filecol;
+        editorRowInsertChar(row, filecol, '\0', true);
+        //row->chars[filecol] = '\0'; //NOTE: need to send this case as a message to server
+        //row->size = filecol;
         editorUpdateRow(row);
     }
 
