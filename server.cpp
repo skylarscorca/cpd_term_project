@@ -20,9 +20,12 @@
 #include <sstream>
 using namespace std;
 
+#define MSGSIZE 1024
+
 string filename = "test";
 vector<string> lines;
 vector<int> users;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 //readFile - reads lines in file into the data structure lines
 void readFile(){
@@ -35,7 +38,7 @@ void readFile(){
 
 //sendFile - send file line-by-line to a client at fd
 void sendFile(int fd){
-	send(fd, (void*)"Start Transfer", 1024, 0);
+	send(fd, (void*)"Start Transfer", MSGSIZE, 0);
 
 	for(string msg : lines){
 		char buffer[1024];
@@ -43,7 +46,7 @@ void sendFile(int fd){
 		read(fd, buffer, 1024);
 	}
 
-	send(fd, (void*)"End Transfer", 1024, 0);
+	send(fd, (void*)"End Transfer", MSGSIZE, 0);
 }
 
 //threadFunc - thread function to read any messages from a client
@@ -56,7 +59,7 @@ void *threadFunc(void *args){
 	pthread_detach(pthread_self());
 
 	// Read until disconnection
-	while ((n = read(clientFd, buffer, 1024)) > 0){
+	while ((n = read(clientFd, buffer, MSGSIZE)) > 0){
 		string line(buffer);
 		
 		if (line == "exit"){
@@ -75,34 +78,38 @@ void *threadFunc(void *args){
             string cmd, row, col, text;
 			getline(ss, cmd, ':');
 			
-			// Update lines with changes
+			// Lock mutex
+			pthread_mutex_lock(&lock);
+			
+			// // Update lines with changes
 			if(cmd == "ir"){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
-				lines.insert(lines.begin() + stoi(row), text);
+				int pos = stoi(row);
+				lines.insert(lines.begin() + pos, text);
 				if (text != ""){
 					lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));	
 				}
-			} else if(cmd == "dr"){
-				getline(ss, row, ':');
-				lines.erase(lines.begin() + stoi(row));
-			} else if(cmd == "ic"){
-				getline(ss, row, ':');
-				getline(ss, col, ':');
-				getline(ss, text, ':');
-				lines[stoi(row)].insert(stoi(col), text);
-			} else if(cmd == "as"){
-				getline(ss, row, ':');
-				getline(ss, text, ':');
-				lines[stoi(row)].append(text);
-			} else if(cmd == "dc"){
-				getline(ss, row, ':');
-				getline(ss, col, ':');
-				lines[stoi(row)].erase(stoi(col), 1);
-			} else{
-				cout << "Error: " << cmd << " is not a valid update type\n";
-                validCMD = false;
-			}
+			} //else if(cmd == "dr"){
+			// 	getline(ss, row, ':');
+			// 	lines.erase(lines.begin() + stoi(row));
+			// } else if(cmd == "ic"){
+			// 	getline(ss, row, ':');
+			// 	getline(ss, col, ':');
+			// 	getline(ss, text, ':');
+			// 	lines[stoi(row)].insert(stoi(col), text);
+			// } else if(cmd == "as"){
+			// 	getline(ss, row, ':');
+			// 	getline(ss, text, ':');
+			// 	lines[stoi(row)].append(text);
+			// } else if(cmd == "dc"){
+			// 	getline(ss, row, ':');
+			// 	getline(ss, col, ':');
+			// 	lines[stoi(row)].erase(stoi(col), 1);
+			// } else{
+			// 	cout << "Error: " << cmd << " is not a valid update type\n";
+            //     validCMD = false;
+			// }
 
             if(validCMD){
 				// Update master file
@@ -117,6 +124,9 @@ void *threadFunc(void *args){
                     write(user, buffer, 1024);
                 }
             }
+			
+			// Unlock mutex
+			pthread_mutex_unlock(&lock);
 		}
 	}
 
