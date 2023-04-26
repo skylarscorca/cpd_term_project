@@ -41,7 +41,7 @@ void sendFile(int fd){
 
 	for(string msg : lines){
 		char buffer[MSGSIZE];
-		send(fd, msg.c_str(), msg.length(), 0);
+		send(fd, msg.c_str(), MSGSIZE, 0);
 		read(fd, buffer, MSGSIZE);
 	}
 
@@ -105,7 +105,7 @@ void *threadFunc(void *args){
 			} else if(cmd == "dc"){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
-				lines[stoi(row)].erase(stoi(col), 1);
+				lines[stoi(row)].erase(stoi(col), 0);
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
