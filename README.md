@@ -13,7 +13,7 @@ New Usage: kilo `<host>` `<port>`
 
 Editor Keys:
 
-    CTRL-S: Save
+    CTRL-S: Save (concurrent version automatically saves on server)
     CTRL-Q: Quit
     CTRL-F: Find string in file (ESC to exit search, arrows to navigate)
 

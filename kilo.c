@@ -39,6 +39,7 @@
 #endif
 
 #include <termios.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -120,8 +121,6 @@ struct editorConfig {
     time_t statusmsg_time;
     struct editorSyntax *syntax;    /* Current syntax highlight, or NULL. */
 };
-
-//Note: we may want to add a few fields to the erow and editorConfig structs
 
 static struct editorConfig E;
 
@@ -212,7 +211,6 @@ struct editorSyntax HLDB[] = {
 #define HLDB_ENTRIES (sizeof(HLDB)/sizeof(HLDB[0]))
 
 /* ======================= Low level terminal handling ====================== */
-//Note: probably don't need to edit these
 
 static struct termios orig_termios; /* In order to restore at exit.*/
 
@@ -377,7 +375,6 @@ failed:
 }
 
 /* ====================== Syntax highlight color scheme  ==================== */
-//Note: probably don't need to edit these
 
 int is_separator(int c) {
     return c == '\0' || isspace(c) || strchr(",.()+-/*=~%[];",c) != NULL;
@@ -567,10 +564,6 @@ void editorSelectSyntaxHighlight(char *filename) {
 }
 
 /* ======================= Editor rows implementation ======================= */
-//Note: probably want to edit these. perhaps at the end of an update function, we call another 
-// function to send an update message to the server.
-//Note: we can copy the logic from these functions to allow for editing after receuving an
-// update message from the server.
 
 /* Update the rendered version and the syntax highlight of a row. */
 void editorUpdateRow(erow *row) {
@@ -609,7 +602,7 @@ void editorUpdateRow(erow *row) {
 
 /* Insert a row at the specified position, shifting the other rows on the bottom
  * if required. */
-void editorInsertRow(int at, char *s, size_t len) {
+void editorInsertRow(int at, char *s, size_t len, bool sendToServer) {
     if (at > E.numrows) return;
     E.row = realloc(E.row,sizeof(erow)*(E.numrows+1));
     if (at != E.numrows) {
@@ -628,10 +621,12 @@ void editorInsertRow(int at, char *s, size_t len) {
     E.numrows++;
     E.dirty++;
 
-/*     //setup server message
-    char msg[MSGSIZE];
-    sprintf(msg, "ir:%d:%s", at, s);
-    send(serverFd, msg, MSGSIZE, 0); */
+    //setup server message
+    if(sendToServer){
+        char msg[MSGSIZE];
+        sprintf(msg, "ir:%d:%s", at, s);
+        send(serverFd, msg, MSGSIZE, 0);
+    }
 }
 
 /* Free row's heap allocated stuff. */
@@ -643,7 +638,7 @@ void editorFreeRow(erow *row) {
 
 /* Remove the row at the specified position, shifting the remaining on the
  * top. */
-void editorDelRow(int at) {
+void editorDelRow(int at, bool sendToServer) {
     erow *row;
 
     if (at >= E.numrows) return;
@@ -655,9 +650,11 @@ void editorDelRow(int at) {
     E.dirty++;
 
     //setup server message
-    char msg[MSGSIZE];
-    sprintf(msg, "dr:%d", at);
-    send(serverFd, msg, MSGSIZE, 0);
+    if(sendToServer){
+        char msg[MSGSIZE];
+        sprintf(msg, "dr:%d", at);
+        send(serverFd, msg, MSGSIZE, 0);
+    }
 }
 
 /* Turn the editor rows into a single heap-allocated string.
@@ -688,7 +685,7 @@ char *editorRowsToString(int *buflen) {
 
 /* Insert a character at the specified position in a row, moving the remaining
  * chars on the right if needed. */
-void editorRowInsertChar(erow *row, int at, int c) {
+void editorRowInsertChar(erow *row, int at, int c, bool sendToServer) {
     if (at > row->size) {
         /* Pad the string with spaces if the insert location is outside the
          * current length by more than a single character. */
@@ -706,17 +703,22 @@ void editorRowInsertChar(erow *row, int at, int c) {
         row->size++;
     }
     row->chars[at] = c;
+    if(c == '\0'){
+        row->size = at;
+    }
     editorUpdateRow(row);
     E.dirty++;
 
     //setup server message
-    char msg[MSGSIZE];
-    sprintf(msg, "ic:%d:%d:%c", row->idx, at, c);
-    send(serverFd, msg, MSGSIZE, 0);
+    if(sendToServer){
+        char msg[MSGSIZE];
+        sprintf(msg, "ic:%d:%d:%c", row->idx, at, c);
+        send(serverFd, msg, MSGSIZE, 0);
+    }
 }
 
 /* Append the string 's' at the end of a row */
-void editorRowAppendString(erow *row, char *s, size_t len) {
+void editorRowAppendString(erow *row, char *s, size_t len, bool sendToServer) {
     row->chars = realloc(row->chars,row->size+len+1);
     memcpy(row->chars+row->size,s,len);
     row->size += len;
@@ -725,13 +727,15 @@ void editorRowAppendString(erow *row, char *s, size_t len) {
     E.dirty++;
 
     //setup server message
-    char msg[MSGSIZE];
-    sprintf(msg, "as:%d:%s", row->idx, s);
-    send(serverFd, msg, MSGSIZE, 0);
+    if(sendToServer){
+        char msg[MSGSIZE];
+        sprintf(msg, "as:%d:%s", row->idx, s);
+        send(serverFd, msg, MSGSIZE, 0);
+    }
 }
 
 /* Delete the character at offset 'at' from the specified row. */
-void editorRowDelChar(erow *row, int at) {
+void editorRowDelChar(erow *row, int at, bool sendToServer) {
     if (row->size <= at) return;
     memmove(row->chars+at,row->chars+at+1,row->size-at);
     editorUpdateRow(row);
@@ -739,9 +743,11 @@ void editorRowDelChar(erow *row, int at) {
     E.dirty++;
 
     //setup server message
-    char msg[MSGSIZE];
-    sprintf(msg, "dc:%d:%d", row->idx, at);
-    send(serverFd, msg, MSGSIZE, 0);
+    if(sendToServer){
+        char msg[MSGSIZE];
+        sprintf(msg, "dc:%d:%d", row->idx, at);
+        send(serverFd, msg, MSGSIZE, 0);
+    }
 }
 
 /* Insert the specified char at the current prompt position. */
@@ -755,10 +761,10 @@ void editorInsertChar(int c) {
      * logical representaion of the file, add enough empty rows as needed. */
     if (!row) {
         while(E.numrows <= filerow)
-            editorInsertRow(E.numrows,"",0);
+            editorInsertRow(E.numrows,"",0,true);
     }
     row = &E.row[filerow];
-    editorRowInsertChar(row,filecol,c);
+    editorRowInsertChar(row,filecol,c,true);
     if (E.cx == E.screencols-1)
         E.coloff++;
     else
@@ -768,20 +774,14 @@ void editorInsertChar(int c) {
 
 /* Inserting a newline is slightly complex as we have to handle inserting a
  * newline in the middle of a line, splitting the line as needed. */
-//don't need to make a server message here since we call editorInsertRow
-void editorInsertNewline(void) {
+void editorInsertNewline() {
     int filerow = E.rowoff+E.cy;
     int filecol = E.coloff+E.cx;
     erow *row = (filerow >= E.numrows) ? NULL : &E.row[filerow];
-    char msg[MSGSIZE];
 
     if (!row) {
         if (filerow == E.numrows) {
-            editorInsertRow(filerow,"",0);
-            
-            //server message
-            sprintf(msg, "ir:%d:%s", filerow, "");
-            send(serverFd, msg, MSGSIZE, 0);
+            editorInsertRow(filerow,"",0,true);
             
             goto fixcursor;
         }
@@ -791,22 +791,18 @@ void editorInsertNewline(void) {
      * think it's just over the last character. */
     if (filecol >= row->size) filecol = row->size;
     if (filecol == 0) {
-        editorInsertRow(filerow,"",0);
+        editorInsertRow(filerow,"",0,true);
 
-        //server message
-        sprintf(msg, "ir:%d:%s", filerow, "");
-        send(serverFd, msg, MSGSIZE, 0);
     } else {
         /* We are in the middle of a line. Split it between two rows. */
-        editorInsertRow(filerow+1,row->chars+filecol,row->size-filecol);
-
-        //server message
-        sprintf(msg, "ir:%d:%s", filerow+1, row->chars+filecol);
-        send(serverFd, msg, MSGSIZE, 0);
+        editorInsertRow(filerow+1,row->chars+filecol,row->size-filecol,true);
 
         row = &E.row[filerow];
-        row->chars[filecol] = '\0';
-        row->size = filecol;
+        editorRowInsertChar(row, filecol, '\0', true);
+            //this is the old code. i had to write it as a function call so that
+            //the update would be reflected on other clients
+            //row->chars[filecol] = '\0';
+            //row->size = filecol;
         editorUpdateRow(row);
     }
 
@@ -832,8 +828,8 @@ void editorDelChar() {
         /* Handle the case of column 0, we need to move the current line
          * on the right of the previous one. */
         filecol = E.row[filerow-1].size;
-        editorRowAppendString(&E.row[filerow-1],row->chars,row->size);
-        editorDelRow(filerow);
+        editorRowAppendString(&E.row[filerow-1],row->chars,row->size, true);
+        editorDelRow(filerow, true);
         row = NULL;
         if (E.cy == 0)
             E.rowoff--;
@@ -846,7 +842,7 @@ void editorDelChar() {
             E.coloff += shift;
         }
     } else {
-        editorRowDelChar(row,filecol-1);
+        editorRowDelChar(row,filecol-1, true);
         if (E.cx == 0 && E.coloff)
             E.coloff--;
         else
@@ -882,7 +878,7 @@ int editorOpen(char *filename) {
     while((linelen = getline(&line,&linecap,fp)) != -1) {
         if (linelen && (line[linelen-1] == '\n' || line[linelen-1] == '\r'))
             line[--linelen] = '\0';
-        editorInsertRow(E.numrows,line,linelen);
+        editorInsertRow(E.numrows,line,linelen,false);
     }
     free(line);
     fclose(fp);
@@ -917,8 +913,6 @@ writeerr:
 }
 
 /* ============================= Terminal update ============================ */
-//Note: probably don't need to edit these
-
 /* We define a very simple "append buffer" structure, that is an heap
  * allocated string where we can append to. This is useful in order to
  * write all the escape sequences in a buffer and flush them to the standard
@@ -1074,7 +1068,6 @@ void editorSetStatusMessage(const char *fmt, ...) {
 }
 
 /* =============================== Find mode ================================ */
-//Note: probably don't need to edit these
 
 #define KILO_QUERY_LEN 256
 
@@ -1174,7 +1167,6 @@ void editorFind(int fd) {
 }
 
 /* ========================= Editor events handling  ======================== */
-//Note: we probably don't need to edit these
 
 /* Handle cursor position change because arrow keys were pressed. */
 void editorMoveCursor(int key) {
@@ -1268,7 +1260,7 @@ void editorProcessKeypress(int fd) {
 			execvp("clear", args); // Kills child
 		}
 		wait(NULL); // Wait on child
-        //pthread_kill(read_thread, SIGINT);
+        //pthread_kill(read_thread, SIGINT); //this ended up making it break faster
         close(serverFd);
         exit(EXIT_SUCCESS);
         break;
@@ -1349,7 +1341,11 @@ void initEditor(void) {
     signal(SIGWINCH, handleSigWinCh);
 }
 
-/* ========================= Communication with Server  ======================== */
+/* ========================= Helper Functions ======================== */
+
+
+
+/* ========================= Communication with Server ======================== */
 
 void receiveFile(){
 	ssize_t n;
@@ -1374,65 +1370,82 @@ void receiveFile(){
 }
 
 void handle_server_message(char *msg){
-    char cmd[MSGSIZE], row[MSGSIZE], buffer[MSGSIZE];
+    char cmd[MSGSIZE], arg1[MSGSIZE], arg2[MSGSIZE], arg3[MSGSIZE];
     FILE *debug = fopen("debug", "a");
-    int i;
+    int i, j;
     
+    /*-- tokenize --*/
     //get command
-    for(i = 0; i < MSGSIZE; ++i){
-        if(msg[i] == ':'){break;} //stop reading when we encounter colon
-        cmd[i] = msg[i];
+    for(i = 0, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        cmd[j] = msg[i];
     }
-	cmd[i+1] = '\0';
-	
-	// Get row
-	int div = i + 1;
-	for (i; i < MSGSIZE; i++){
-		if (msg[i] == ':' || msg[i] == '\0') { break; }
-		row[i - div] = msg[i];
-	}
-	row[i+1 - div] = '\0';
-	int r = atoi(row);
-	
-	// Handle delete row - only requires row
-	if (!strcmp(cmd, "dr")){
-		// All stuff needed is here
-		return;
-	}
-	
-	// Fill buffer with remaining chars
-	div = i + 1;
-	for (i; i < MSGSIZE; i++){
-		if (msg[i] == '\0') { break; }
-		buffer[i - div] = msg[i];
-	}
-	buffer[i+1 - div] = '\0';
-	
-	// Handle inserting newline
-	if (!strcmp(cmd, "ir")){
-		// Everything needed is here
-		return;
-	}
-	
-	// Handle appending a string
-	if (!strcmp(cmd, "as")){
-		// Everything needed is here
-		return;		
-	}
-	
-	// Convert buffer to int - buffer represents column index
-	int col = atoi(buffer);
-	
-	// Handle inserting character
-	if (!strcmp(cmd, "ic")){
-		
-	}
-	
-	// Handle deleting character
-	if (!strcmp(cmd, "dc")){
-		
-	}
-    fprintf(debug, "cmd is %s\n", cmd);
+    cmd[j] = '\0';
+    //get arg1
+    for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        arg1[j] = msg[i];
+    }
+    arg1[j] = '\0';
+    //get arg2
+    for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        arg2[j] = msg[i];
+    }
+    arg2[j] = '\0';
+    //get arg3
+    //Note: sometimes arg3 isn't copied correctly
+    for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
+        //stop when we encounter colon or null
+        if(msg[i] == ':' || msg[i] == '\0'){break;}
+        arg3[j] = msg[i];
+    }
+    arg3[j] = '\0';
+
+    fprintf(debug, "message is %s\n", msg);
+    fprintf(debug, "tokenized message is %s %s %s %s\n", cmd, arg1, arg2, arg3);
+
+    if(strcmp(cmd, "dc") == 0){
+        int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
+        int char_index = atoi(arg2);
+        editorRowDelChar(row, char_index, false);
+        editorUpdateRow(row);
+    }
+    else if(strcmp(cmd, "as") == 0){
+        int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
+        char * new_string = arg2;
+        editorRowAppendString(row, new_string, strlen(new_string), false);
+        editorUpdateRow(row);
+    }
+    else if(strcmp(cmd, "ic") == 0){
+        int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
+        int char_index = atoi(arg2);
+        char new_char = arg3[0];
+        editorRowInsertChar(row, char_index, new_char, false);
+        editorUpdateRow(row);
+    }
+    else if(strcmp(cmd, "dr") == 0){
+        int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
+        editorDelRow(row_index, false);
+        editorUpdateRow(row);
+    }
+    //insert row doesn't work yet
+    else if(strcmp(cmd, "ir") == 0){
+        int row_index = atoi(arg1);
+        erow * row = E.row + row_index;
+        char * new_string = arg2;
+        editorInsertRow(row_index, new_string, strlen(new_string), false);
+        editorUpdateRow(row);
+    }
+
+    editorRefreshScreen();
     fclose(debug);
 }
 

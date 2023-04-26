@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -25,7 +26,7 @@ using namespace std;
 string filename = "test";
 vector<string> lines;
 vector<int> users;
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 //readFile - reads lines in file into the data structure lines
 void readFile(){
@@ -41,9 +42,9 @@ void sendFile(int fd){
 	send(fd, (void*)"Start Transfer", MSGSIZE, 0);
 
 	for(string msg : lines){
-		char buffer[1024];
+		char buffer[MSGSIZE];
 		send(fd, msg.c_str(), msg.length(), 0);
-		read(fd, buffer, 1024);
+		read(fd, buffer, MSGSIZE);
 	}
 
 	send(fd, (void*)"End Transfer", MSGSIZE, 0);
@@ -53,7 +54,7 @@ void sendFile(int fd){
 void *threadFunc(void *args){
 	ssize_t n;
 	int clientFd = *(int*)args;
-	char buffer[1024];
+	char buffer[MSGSIZE];
 	bool copied = false;
 
 	pthread_detach(pthread_self());
@@ -61,7 +62,7 @@ void *threadFunc(void *args){
 	// Read until disconnection
 	while ((n = read(clientFd, buffer, MSGSIZE)) > 0){
 		string line(buffer);
-		
+		cout << line << endl;
 		if (line == "exit"){
 			close(clientFd);
 		}
@@ -78,41 +79,44 @@ void *threadFunc(void *args){
             string cmd, row, col, text;
 			getline(ss, cmd, ':');
 			
-			// Lock mutex
-			pthread_mutex_lock(&lock);
-			
-			// // Update lines with changes
+			// Update lines with changes
+			pthread_mutex_lock(&file_lock);
 			if(cmd == "ir"){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
-				int pos = stoi(row);
-				lines.insert(lines.begin() + pos, text);
+				lines.insert(lines.begin() + stoi(row), text);
+
+				//i think we need to take this part out. i made it so that
+				//in this case the client will send an "insert character"
+				//with the null character in the location where the row
+				//was split. so this logic should be moved to 'ic'
 				if (text != ""){
 					lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));	
 				}
-			} //else if(cmd == "dr"){
-			// 	getline(ss, row, ':');
-			// 	lines.erase(lines.begin() + stoi(row));
-			// } else if(cmd == "ic"){
-			// 	getline(ss, row, ':');
-			// 	getline(ss, col, ':');
-			// 	getline(ss, text, ':');
-			// 	lines[stoi(row)].insert(stoi(col), text);
-			// } else if(cmd == "as"){
-			// 	getline(ss, row, ':');
-			// 	getline(ss, text, ':');
-			// 	lines[stoi(row)].append(text);
-			// } else if(cmd == "dc"){
-			// 	getline(ss, row, ':');
-			// 	getline(ss, col, ':');
-			// 	lines[stoi(row)].erase(stoi(col), 1);
-			// } else{
-			// 	cout << "Error: " << cmd << " is not a valid update type\n";
-            //     validCMD = false;
-			// }
-
+			} else if(cmd == "dr"){
+				getline(ss, row, ':');
+				lines.erase(lines.begin() + stoi(row));
+			} else if(cmd == "ic"){
+				getline(ss, row, ':');
+				getline(ss, col, ':');
+				getline(ss, text, ':');
+				lines[stoi(row)].insert(stoi(col), text);
+			} else if(cmd == "as"){
+				getline(ss, row, ':');
+				getline(ss, text, ':');
+				lines[stoi(row)].append(text);
+			} else if(cmd == "dc"){
+				getline(ss, row, ':');
+				getline(ss, col, ':');
+				lines[stoi(row)].erase(stoi(col), 1);
+			} else{
+				cout << "Error: " << cmd << " is not a valid update type\n";
+                validCMD = false;
+			}
+			pthread_mutex_unlock(&file_lock);
             if(validCMD){
 				// Update master file
+				remove(filename.c_str());
 				ofstream file(filename);
 				for (string line : lines){
 					file << line << endl;
@@ -121,12 +125,9 @@ void *threadFunc(void *args){
                 // Send update messages
                 for(auto user : users){
                     if(user == clientFd) continue;
-                    write(user, buffer, 1024);
+                    write(user, buffer, MSGSIZE);
                 }
             }
-			
-			// Unlock mutex
-			pthread_mutex_unlock(&lock);
 		}
 	}
 
@@ -147,7 +148,7 @@ void handleSigInt(int unused __attribute__((unused))){
 //main server program
 int main(int argc, char *argv[]){
 	if (argc != 2){
-		cerr << "Usage: <server> <port>\n";
+		cerr << "Usage: server <port>\n";
 		return 1;
 	}
 	readFile();
@@ -188,10 +189,10 @@ int main(int argc, char *argv[]){
 	}
 
 	// Get name and port assigned to server
-	char *name = new char[1024];
+	char *name = new char[MSGSIZE];
 	struct sockaddr_in infoAddr;
 	socklen_t len = sizeof(infoAddr);
-	gethostname(name, 1024);
+	gethostname(name, MSGSIZE);
 	getsockname(serverFd, (struct sockaddr *)&infoAddr, &len);
 
 	// Report name and port
