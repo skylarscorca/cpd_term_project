@@ -1461,9 +1461,14 @@ void *read_server_messages(){
         handle_server_message(buffer);
     }
 
-    printf("server crashed\n");
+	if (!fork()){
+		char *args[] = {"clear", NULL};
+		execvp("clear", args); // Kills child
+	}
+	wait(NULL); // Wait on child
+    close(serverFd);
+    printf("Server crashed.\n");
     exit(EXIT_FAILURE);
-    return NULL;
 }
 
 /* ============================= Main Program ================================== */
