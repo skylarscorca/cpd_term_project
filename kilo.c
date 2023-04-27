@@ -1341,10 +1341,6 @@ void initEditor(void) {
     signal(SIGWINCH, handleSigWinCh);
 }
 
-/* ========================= Helper Functions ======================== */
-
-
-
 /* ========================= Communication with Server ======================== */
 
 void receiveFile(){
@@ -1373,6 +1369,9 @@ void handle_server_message(char *msg){
     char cmd[MSGSIZE], arg1[MSGSIZE], arg2[MSGSIZE], arg3[MSGSIZE];
     FILE *debug = fopen("debug", "a");
     int i, j;
+
+    //initialize strings
+    cmd[0] = arg1[0] = arg2[0] = arg3[0] = '\0';
     
     /*-- tokenize --*/
     //get command
@@ -1397,7 +1396,7 @@ void handle_server_message(char *msg){
     }
     arg2[j] = '\0';
     //get arg3
-    //Note: sometimes arg3 isn't copied correctly
+    //Note: sometimes arg3 contains garbage data
     for(i = i+1, j = 0; i < MSGSIZE; ++i, ++j){
         //stop when we encounter colon or null
         if(msg[i] == ':' || msg[i] == '\0'){break;}
@@ -1436,7 +1435,6 @@ void handle_server_message(char *msg){
         editorDelRow(row_index, false);
         editorUpdateRow(row);
     }
-    //insert row doesn't work yet
     else if(strcmp(cmd, "ir") == 0){
         int row_index = atoi(arg1);
         erow * row = E.row + row_index;

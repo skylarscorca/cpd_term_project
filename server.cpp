@@ -102,6 +102,8 @@ void *threadFunc(void *args){
 			} else if(cmd == "dc"){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
+
+				//might be good to check if col is in range
 				lines[stoi(row)].erase(stoi(col), 1);
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
