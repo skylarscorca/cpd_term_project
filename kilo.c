@@ -151,6 +151,13 @@ enum KEY_ACTION{
         PAGE_DOWN
 };
 
+//print to debug file
+void debug_print(char * s){
+    FILE *debug = fopen("debug", "a");
+    fprintf(debug, "%s\n", s);
+    fclose(debug);
+}
+
 void editorSetStatusMessage(const char *fmt, ...);
 
 /* =========================== Syntax highlights DB =========================
@@ -639,6 +646,7 @@ void editorFreeRow(erow *row) {
 /* Remove the row at the specified position, shifting the remaining on the
  * top. */
 void editorDelRow(int at, bool sendToServer) {
+    debug_print("in editorDelRow");
     erow *row;
 
     if (at >= E.numrows) return;
@@ -655,6 +663,7 @@ void editorDelRow(int at, bool sendToServer) {
         sprintf(msg, "dr:%d", at);
         send(serverFd, msg, MSGSIZE, 0);
     }
+    debug_print("exit editorDelRow");
 }
 
 /* Turn the editor rows into a single heap-allocated string.
@@ -719,6 +728,7 @@ void editorRowInsertChar(erow *row, int at, int c, bool sendToServer) {
 
 /* Append the string 's' at the end of a row */
 void editorRowAppendString(erow *row, char *s, size_t len, bool sendToServer) {
+    debug_print("in editorRowAppendString");
     row->chars = realloc(row->chars,row->size+len+1);
     memcpy(row->chars+row->size,s,len);
     row->size += len;
@@ -732,6 +742,7 @@ void editorRowAppendString(erow *row, char *s, size_t len, bool sendToServer) {
         sprintf(msg, "as:%d:%s", row->idx, s);
         send(serverFd, msg, MSGSIZE, 0);
     }
+    debug_print("exit editorRowAppendString");
 }
 
 /* Delete the character at offset 'at' from the specified row. */
@@ -1343,12 +1354,6 @@ void initEditor(void) {
 
 /* ========================= Communication with Server ======================== */
 
-void debug_print(char * s){
-    FILE *debug = fopen("debug", "a");
-    fprintf(debug, "%s\n", s);
-    fclose(debug);
-}
-
 void receiveFile(){
 	ssize_t n;
 	FILE *file = fopen("transfer", "w");
@@ -1441,9 +1446,9 @@ void handle_server_message(char *msg){
     }
     else if(strcmp(cmd, "dr") == 0){
         int row_index = atoi(arg1);
-        erow * row = E.row + row_index;
+        //erow * row = E.row + row_index;
         editorDelRow(row_index, false);
-        editorUpdateRow(row);
+        //editorUpdateRow(row);
     }
     else if(strcmp(cmd, "ir") == 0){
         int row_index = atoi(arg1);
