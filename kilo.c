@@ -65,7 +65,7 @@ static int serverFd;
 static pthread_t read_thread;
 
 /* Temporary File */
-char filename[20] = "transfer";
+char filename[20] = "transfer.cpp";
 
 /* Syntax highlight types */
 #define HL_NORMAL 0
@@ -1356,7 +1356,7 @@ void initEditor(void) {
 
 void receiveFile(){
 	ssize_t n;
-	FILE *file = fopen("transfer", "w");
+	FILE *file = fopen(filename, "w");
 	char buffer[MSGSIZE];
 
 	n = read(serverFd, buffer, MSGSIZE);
