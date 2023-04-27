@@ -102,7 +102,7 @@ void *threadFunc(void *args){
 			} else if(cmd == "dc"){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
-				lines[stoi(row)].erase(stoi(col), 0);
+				lines[stoi(row)].erase(stoi(col), 1);
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
