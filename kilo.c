@@ -1343,6 +1343,12 @@ void initEditor(void) {
 
 /* ========================= Communication with Server ======================== */
 
+void debug_print(char * s){
+    FILE *debug = fopen("debug", "a");
+    fprintf(debug, "%s\n", s);
+    fclose(debug);
+}
+
 void receiveFile(){
 	ssize_t n;
 	FILE *file = fopen("transfer", "w");
@@ -1367,11 +1373,11 @@ void receiveFile(){
 
 void handle_server_message(char *msg){
     char cmd[MSGSIZE], arg1[MSGSIZE], arg2[MSGSIZE], arg3[MSGSIZE];
-    FILE *debug = fopen("debug", "a");
+    char temp[MSGSIZE];
     int i, j;
 
     //initialize strings
-    cmd[0] = arg1[0] = arg2[0] = arg3[0] = '\0';
+    temp[0] = cmd[0] = arg1[0] = arg2[0] = arg3[0] = '\0';
     
     /*-- tokenize --*/
     //get command
@@ -1404,8 +1410,10 @@ void handle_server_message(char *msg){
     }
     arg3[j] = '\0';
 
-    fprintf(debug, "message is %s\n", msg);
-    fprintf(debug, "tokenized message is %s %s %s %s\n", cmd, arg1, arg2, arg3);
+    sprintf(temp, "message is %s", msg);
+    debug_print(temp);
+    sprintf(temp, "tokenized message is %s %s %s %s", cmd, arg1, arg2, arg3);
+    debug_print(temp);
 
     if(strcmp(cmd, "dc") == 0){
         int row_index = atoi(arg1);
@@ -1418,8 +1426,10 @@ void handle_server_message(char *msg){
         int row_index = atoi(arg1);
         erow * row = E.row + row_index;
         char * new_string = arg2;
-        editorRowAppendString(row, new_string, strlen(new_string), false);
-        editorUpdateRow(row);
+        if(new_string[0] != '\0'){
+            editorRowAppendString(row, new_string, strlen(new_string), false);
+            editorUpdateRow(row);
+        }
     }
     else if(strcmp(cmd, "ic") == 0){
         int row_index = atoi(arg1);
@@ -1444,7 +1454,6 @@ void handle_server_message(char *msg){
     }
 
     editorRefreshScreen();
-    fclose(debug);
 }
 
 void *read_server_messages(){
