@@ -103,8 +103,10 @@ void *threadFunc(void *args){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
 
-				//might be good to check if col is in range
-				lines[stoi(row)].erase(stoi(col), 1);
+				//this is kinda a hacky way to fix the problem of the client sending the wrong row number
+				if(stoi(row) >= lines.size()){
+					lines[lines.size() - 1].erase(stoi(col), 1);
+				}
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
