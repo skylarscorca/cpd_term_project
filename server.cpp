@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -26,7 +25,6 @@ using namespace std;
 string filename = "test";
 vector<string> lines;
 vector<int> users;
-pthread_mutex_t file_lock = PTHREAD_MUTEX_INITIALIZER;
 
 //readFile - reads lines in file into the data structure lines
 void readFile(){
@@ -43,7 +41,7 @@ void sendFile(int fd){
 
 	for(string msg : lines){
 		char buffer[MSGSIZE];
-		send(fd, msg.c_str(), msg.length(), 0);
+		send(fd, msg.c_str(), MSGSIZE, 0);
 		read(fd, buffer, MSGSIZE);
 	}
 
@@ -62,7 +60,7 @@ void *threadFunc(void *args){
 	// Read until disconnection
 	while ((n = read(clientFd, buffer, MSGSIZE)) > 0){
 		string line(buffer);
-		cout << line << endl;
+		
 		if (line == "exit"){
 			close(clientFd);
 		}
@@ -73,26 +71,17 @@ void *threadFunc(void *args){
 		}
 		else if(copied){
 			stringstream ss(line);
-
+			cout << line << endl;
 			//get update type
             bool validCMD = true;
             string cmd, row, col, text;
 			getline(ss, cmd, ':');
 			
 			// Update lines with changes
-			pthread_mutex_lock(&file_lock);
 			if(cmd == "ir"){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
 				lines.insert(lines.begin() + stoi(row), text);
-
-				//i think we need to take this part out. i made it so that
-				//in this case the client will send an "insert character"
-				//with the null character in the location where the row
-				//was split. so this logic should be moved to 'ic'
-				if (text != ""){
-					lines[stoi(row) - 1].erase(lines[stoi(row) - 1].find(text));	
-				}
 			} else if(cmd == "dr"){
 				getline(ss, row, ':');
 				lines.erase(lines.begin() + stoi(row));
@@ -100,7 +89,12 @@ void *threadFunc(void *args){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
 				getline(ss, text, ':');
-				lines[stoi(row)].insert(stoi(col), text);
+				if (text == ""){
+					// cout << "EMPTY\n";
+					lines[stoi(row)] = lines[stoi(row)].substr(0, stoi(col));
+				} else {
+					lines[stoi(row)].insert(stoi(col), text);
+				}
 			} else if(cmd == "as"){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
@@ -113,10 +107,9 @@ void *threadFunc(void *args){
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
 			}
-			pthread_mutex_unlock(&file_lock);
+
             if(validCMD){
 				// Update master file
-				remove(filename.c_str());
 				ofstream file(filename);
 				for (string line : lines){
 					file << line << endl;

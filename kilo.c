@@ -617,7 +617,7 @@ void editorInsertRow(int at, char *s, size_t len, bool sendToServer) {
     E.row[at].render = NULL;
     E.row[at].rsize = 0;
     E.row[at].idx = at;
-    editorUpdateRow(E.row+at);
+    editorUpdateRow(E.row+at); 
     E.numrows++;
     E.dirty++;
 
@@ -1467,7 +1467,8 @@ void *read_server_messages(){
 	}
 	wait(NULL); // Wait on child
     close(serverFd);
-    printf("Server crashed.\n");
+    editorAtExit();
+	printf("Server crashed.\n");
     exit(EXIT_FAILURE);
 }
 
