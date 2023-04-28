@@ -36,10 +36,9 @@ style CLI.
 Kilo was written by Salvatore Sanfilippo aka antirez and is released
 under the BSD 2 clause license.
 
+Concurrent Text File Editing
+===
 Term Project for COP5570
-===
-Concurrent Text File Editing (Google Docs redev)
-===
 
 Contributers:
 Skylar Scorca,
