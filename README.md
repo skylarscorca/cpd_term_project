@@ -15,8 +15,8 @@ Server must be started before starting kilo. Multiple users may connect to the s
 or different files.
 
 Test Files:
-test - a simple text file with sample text
-test.cpp - a simple c++ file to show syntax highlighting
+- test - a simple text file with sample text
+- test.cpp - a simple c++ file to show syntax highlighting
 
 Editor Keys:
 
