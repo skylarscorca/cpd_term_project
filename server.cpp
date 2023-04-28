@@ -26,11 +26,10 @@ vector<pair<string, vector<string> > > lines;
 vector<pair<int, string> > users;
 
 //readFile - reads lines in file into the data structure lines
-void readFile(int userIndex){
+void readFile(string filename){
     // Check to see if a prior user already opened the file
-    string filename = users[userIndex].second;
-    for(int i = 0; i < userIndex; ++i){
-        if(users[i].second == filename) return;
+    for(auto fileLine : lines){
+        if(fileLine.first == filename) return;
     }
 
     string line;
@@ -82,8 +81,7 @@ void *threadFunc(void *args){
             for(unsigned i = 0; i < users.size(); ++i){
                 if(users[i].first == clientFd){
                     users[i].second = line.substr(4);
-                    cout << users[i].second << endl;
-                    readFile(i);
+                    readFile(users[i].second);
                     sendFile(i);	
                 }
             }
