@@ -100,7 +100,6 @@ void *threadFunc(void *args){
             }
 
 			stringstream ss(line);
-			cout << line << endl;
 			//get update type
             bool validCMD = true;
             string cmd, row, col, text;
@@ -125,7 +124,6 @@ void *threadFunc(void *args){
 				}
 
 				if (text == ""){
-					// cout << "EMPTY\n";
 					lines[fileIndex].second[stoi(row)] = lines[fileIndex].second[stoi(row)].substr(0, stoi(col));
 				} else {
 					lines[fileIndex].second[stoi(row)].insert(stoi(col), text);
