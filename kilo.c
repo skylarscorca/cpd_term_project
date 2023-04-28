@@ -65,7 +65,7 @@ static int serverFd;
 static pthread_t read_thread;
 
 /* Temporary File */
-char filename[20] = "transfer";
+char filename[20] = "transfer.cpp";
 
 /* Syntax highlight types */
 #define HL_NORMAL 0
@@ -1356,7 +1356,7 @@ void initEditor(void) {
 
 void receiveFile(){
 	ssize_t n;
-	FILE *file = fopen("transfer", "w");
+	FILE *file = fopen(filename, "w");
 	char buffer[MSGSIZE];
 
 	n = read(serverFd, buffer, MSGSIZE);
@@ -1487,8 +1487,8 @@ void *read_server_messages(){
 //main program of text-editor client
 int main(int argc, char **argv) {
 	//check command-line args
-    if (argc != 3) {
-        fprintf(stderr,"Usage: kilo <host> <port>\n");
+    if (argc != 4) {
+        fprintf(stderr,"Usage: kilo <host> <port> <filename>\n");
         exit(EXIT_FAILURE);
     }
 
@@ -1513,7 +1513,10 @@ int main(int argc, char **argv) {
 	}
 	printf("Connected\n");
 
-    send(serverFd, "get", 1024, 0);
+    char fileGetter[128] = "get ";
+    strncat(fileGetter, argv[3], 123);
+    fileGetter[127] = '\n';
+    send(serverFd, fileGetter, 1024, 0);
     receiveFile();
 
     //create thread for reading server messages

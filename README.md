@@ -5,15 +5,16 @@ Kilo is a small text editor in less than 1K lines of code (counted with cloc).
 
 A screencast is available here: https://asciinema.org/a/90r2i9bq8po03nazhqtsifksb
 
-Usage: kilo `<filename>`
+Usage: kilo `<filename>` (Depreciated for CPD project)
 
-New Usage: kilo `<host>` `<port>`
+Kilo Usage: kilo `<host>` `<port>` `<filename>`
+Server Usage: server `<port>`
 
 'get' to copy file from server
 
 Editor Keys:
 
-    CTRL-S: Save (concurrent version automatically saves on server)
+    CTRL-S: Save (concurrent version automatically saves on server) (Disabled for CPD project)
     CTRL-Q: Quit
     CTRL-F: Find string in file (ESC to exit search, arrows to navigate)
 
@@ -49,8 +50,4 @@ Optional Objectives: (if time allows)
 - Allow users to modify the tree structure of the greater system of files
 - Allow users to view the updates to the file system in real-time
 
-Due date countdown:
-https://www.timeanddate.com/countdown/generic?iso=20230428T2359&p0=856&msg=cpd+term+project+due+date&font=cursive&csz=1
 
-Google Drive Folder:
-https://drive.google.com/drive/folders/1sZ5ulUizpBA6Rq9KOYdHxhaF4QC_5UAi?usp=share_link
