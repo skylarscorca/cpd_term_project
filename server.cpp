@@ -118,6 +118,12 @@ void *threadFunc(void *args){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
 				getline(ss, text, ':');
+
+				//pad with spaces if larger than current size
+				if((unsigned int)stoi(col) > lines[fileIndex].second[stoi(row)].size()){
+					lines[fileIndex].second[stoi(row)].resize(stoi(col), ' ');
+				}
+
 				if (text == ""){
 					// cout << "EMPTY\n";
 					lines[fileIndex].second[stoi(row)] = lines[fileIndex].second[stoi(row)].substr(0, stoi(col));
@@ -131,7 +137,11 @@ void *threadFunc(void *args){
 			} else if(cmd == "dc"){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
-				lines[fileIndex].second[stoi(row)].erase(stoi(col), 1);
+
+				//if out of range, do nothing
+				if((unsigned int)stoi(col) <= lines[fileIndex].second[stoi(row)].size()){
+					lines[fileIndex].second[stoi(row)].erase(stoi(col), 1);
+				}
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
                 validCMD = false;
