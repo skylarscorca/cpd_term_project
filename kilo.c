@@ -649,11 +649,11 @@ void editorDelRow(int at, bool sendToServer) {
     debug_print("in editorDelRow");
     erow *row;
 
-    if (at >= E.numrows) return;
-    row = E.row+at;
-    editorFreeRow(row);
-    memmove(E.row+at,E.row+at+1,sizeof(E.row[0])*(E.numrows-at-1));
-    for (int j = at; j < E.numrows-1; j++) E.row[j].idx++;
+    if (at >= E.numrows) return; //don't delete non-existant row
+    row = E.row+at; //get row from index
+    editorFreeRow(row); //free the row
+    memmove(E.row+at,E.row+at+1,sizeof(E.row[0])*(E.numrows-at-1)); //copy data of the remaining rows back one slot
+    for (int j = at; j < E.numrows-1; j++) E.row[j].idx = j; //reset the index of the rows
     E.numrows--;
     E.dirty++;
 
