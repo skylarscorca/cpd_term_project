@@ -646,7 +646,6 @@ void editorFreeRow(erow *row) {
 /* Remove the row at the specified position, shifting the remaining on the
  * top. */
 void editorDelRow(int at, bool sendToServer) {
-    debug_print("in editorDelRow");
     erow *row;
 
     if (at >= E.numrows) return; //don't delete non-existant row
@@ -663,7 +662,6 @@ void editorDelRow(int at, bool sendToServer) {
         sprintf(msg, "dr:%d", at);
         send(serverFd, msg, MSGSIZE, 0);
     }
-    debug_print("exit editorDelRow");
 }
 
 /* Turn the editor rows into a single heap-allocated string.
@@ -728,7 +726,6 @@ void editorRowInsertChar(erow *row, int at, int c, bool sendToServer) {
 
 /* Append the string 's' at the end of a row */
 void editorRowAppendString(erow *row, char *s, size_t len, bool sendToServer) {
-    debug_print("in editorRowAppendString");
     row->chars = realloc(row->chars,row->size+len+1);
     memcpy(row->chars+row->size,s,len);
     row->size += len;
@@ -742,7 +739,6 @@ void editorRowAppendString(erow *row, char *s, size_t len, bool sendToServer) {
         sprintf(msg, "as:%d:%s", row->idx, s);
         send(serverFd, msg, MSGSIZE, 0);
     }
-    debug_print("exit editorRowAppendString");
 }
 
 /* Delete the character at offset 'at' from the specified row. */
@@ -1378,11 +1374,10 @@ void receiveFile(){
 
 void handle_server_message(char *msg){
     char cmd[MSGSIZE], arg1[MSGSIZE], arg2[MSGSIZE], arg3[MSGSIZE];
-    char temp[MSGSIZE];
     int i, j;
 
     //initialize strings
-    temp[0] = cmd[0] = arg1[0] = arg2[0] = arg3[0] = '\0';
+    cmd[0] = arg1[0] = arg2[0] = arg3[0] = '\0';
     
     /*-- tokenize --*/
     //get command
@@ -1414,11 +1409,6 @@ void handle_server_message(char *msg){
         arg3[j] = msg[i];
     }
     arg3[j] = '\0';
-
-    sprintf(temp, "message is %s", msg);
-    debug_print(temp);
-    sprintf(temp, "tokenized message is %s %s %s %s", cmd, arg1, arg2, arg3);
-    debug_print(temp);
 
     if(strcmp(cmd, "dc") == 0){
         int row_index = atoi(arg1);
