@@ -38,6 +38,7 @@ under the BSD 2 clause license.
 
 Concurrent Text File Editing
 ===
+
 Term Project for COP5570
 
 Contributers:
@@ -50,7 +51,3 @@ Features added:
 - Kilo client connects to server and does not save the file locally
 - Kilo allows users to edit the file and view the edits of other users simultaneously
 - Server automatically saves the file contents for every update
-
-Test Files:
-
-
