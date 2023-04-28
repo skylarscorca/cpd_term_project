@@ -24,7 +24,7 @@ using namespace std;
 
 string filename = "test";
 vector<string> lines;
-vector<int> users;
+vector<pair<int, string> > users;
 
 //readFile - reads lines in file into the data structure lines
 void readFile(){
@@ -121,15 +121,15 @@ void *threadFunc(void *args){
 				file.close();
                 // Send update messages
                 for(auto user : users){
-                    if(user == clientFd) continue;
-                    write(user, buffer, MSGSIZE);
+                    if(user.first == clientFd) continue;
+                    write(user.first, buffer, MSGSIZE);
                 }
             }
 		}
 	}
 
     for(unsigned i = 0; i < users.size(); ++i){
-        if(users[i] == clientFd) users.erase(users.begin()+i);
+        if(users[i].first == clientFd) users.erase(users.begin()+i);
     }
     close(clientFd);
     pthread_exit(NULL);
@@ -200,11 +200,11 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in cliAddr;
 	len = sizeof(cliAddr);
 	while (true){
-		users.push_back(accept(serverFd, (struct sockaddr *)&serverAddr, &len));
+		users.push_back(pair<int, string>(accept(serverFd, (struct sockaddr *)&serverAddr, &len), ""));
         cout << "# of connected users: " << users.size() << endl;
 		// Create thread to deal with client
 		pthread_t thread;
-		pthread_create(&thread, NULL, threadFunc, (void *)&users[users.size()-1]);
+		pthread_create(&thread, NULL, threadFunc, (void *)&users[users.size()-1].first);
 	}
 	return 0;
 }
