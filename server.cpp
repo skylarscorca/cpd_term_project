@@ -22,30 +22,42 @@ using namespace std;
 
 #define MSGSIZE 1024
 
-string filename = "test";
-vector<string> lines;
-vector<int> users;
+vector<pair<string, vector<string> > > lines;
+vector<pair<int, string> > users;
 
 //readFile - reads lines in file into the data structure lines
-void readFile(){
-	string line;
+void readFile(string filename){
+    // Check to see if a prior user already opened the file
+    for(auto fileLine : lines){
+        if(fileLine.first == filename) return;
+    }
+
+    string line;
 	ifstream file(filename);
+    lines.push_back(pair<string, vector<string> >(filename, vector<string>()));
 	while (getline(file, line)){
-		lines.push_back(line);
+		lines.back().second.push_back(line);
 	}
 }
 
 //sendFile - send file line-by-line to a client at fd
-void sendFile(int fd){
-	send(fd, (void*)"Start Transfer", MSGSIZE, 0);
-
-	for(string msg : lines){
+void sendFile(int userIndex){
+	send(users[userIndex].first, (void*)"Start Transfer", MSGSIZE, 0);
+	
+    // Find user file
+    int fileIndex;
+    for(fileIndex = 0; fileIndex < lines.size(); ++fileIndex){
+        if(lines[fileIndex].first == users[userIndex].second) break;
+    }
+    
+    // Transfer file
+    for(string msg : lines[fileIndex].second){
 		char buffer[MSGSIZE];
-		send(fd, msg.c_str(), MSGSIZE, 0);
-		read(fd, buffer, MSGSIZE);
+		send(users[userIndex].first, msg.c_str(), MSGSIZE, 0);
+		read(users[userIndex].first, buffer, MSGSIZE);
 	}
 
-	send(fd, (void*)"End Transfer", MSGSIZE, 0);
+	send(users[userIndex].first, (void*)"End Transfer", MSGSIZE, 0);
 }
 
 //threadFunc - thread function to read any messages from a client
@@ -62,14 +74,31 @@ void *threadFunc(void *args){
 		string line(buffer);
 		
 		if (line == "exit"){
-			close(clientFd);
+			break;
 		}
-		else if (line == "get"){
+		else if (line.substr(0,4) == "get "){
 			cout << "Get Received" << endl;
-			sendFile(clientFd);	
+            for(unsigned i = 0; i < users.size(); ++i){
+                if(users[i].first == clientFd){
+                    users[i].second = line.substr(4);
+                    readFile(users[i].second);
+                    sendFile(i);	
+                }
+            }
 			copied = true;
 		}
 		else if(copied){
+            // Find user
+            int userIndex;
+            for(userIndex = 0; userIndex < users.size(); ++userIndex){
+                if(users[userIndex].first == clientFd) break;
+            }
+            // Find user file
+            int fileIndex;
+            for(fileIndex = 0; fileIndex < lines.size(); ++fileIndex){
+                if(lines[fileIndex].first == users[userIndex].second) break;
+            }
+
 			stringstream ss(line);
 			cout << line << endl;
 			//get update type
@@ -81,31 +110,31 @@ void *threadFunc(void *args){
 			if(cmd == "ir"){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
-				lines.insert(lines.begin() + stoi(row), text);
+				lines[fileIndex].second.insert(lines[fileIndex].second.begin() + stoi(row), text);
 			} else if(cmd == "dr"){
 				getline(ss, row, ':');
-				lines.erase(lines.begin() + stoi(row));
+				lines[fileIndex].second.erase(lines[fileIndex].second.begin() + stoi(row));
 			} else if(cmd == "ic"){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
 				getline(ss, text, ':');
 				if (text == ""){
 					// cout << "EMPTY\n";
-					lines[stoi(row)] = lines[stoi(row)].substr(0, stoi(col));
+					lines[fileIndex].second[stoi(row)] = lines[fileIndex].second[stoi(row)].substr(0, stoi(col));
 				} else {
-					lines[stoi(row)].insert(stoi(col), text);
+					lines[fileIndex].second[stoi(row)].insert(stoi(col), text);
 				}
 			} else if(cmd == "as"){
 				getline(ss, row, ':');
 				getline(ss, text, ':');
-				lines[stoi(row)].append(text);
+				lines[fileIndex].second[stoi(row)].append(text);
 			} else if(cmd == "dc"){
 				getline(ss, row, ':');
 				getline(ss, col, ':');
 
 				//this is kinda a hacky way to fix the problem of the client sending the wrong row number
-				if(stoi(row) >= lines.size()){
-					lines[lines.size() - 1].erase(stoi(col), 1);
+				if(stoi(row) >= lines[fileIndex].second.size()){
+					lines[fileIndex].second[lines[fileIndex].second.size() - 1].erase(stoi(col), 1);
 				}
 			} else{
 				cout << "Error: " << cmd << " is not a valid update type\n";
@@ -113,23 +142,32 @@ void *threadFunc(void *args){
 			}
 
             if(validCMD){
-				// Update master file
-				ofstream file(filename);
-				for (string line : lines){
-					file << line << endl;
-				}
+                // Find user for masterfile update
+                int userIndex;
+                for(userIndex = 0; userIndex < users.size(); ++userIndex){
+                    if(users[userIndex].first == clientFd) break;
+                }
+				    
+                // Update master file
+                for(int fileIndex = 0; fileIndex < lines.size(); ++fileIndex){
+                    if(lines[fileIndex].first == users[userIndex].second) break;
+                }
+				ofstream file(lines[fileIndex].first);
+				for (string line : lines[fileIndex].second) file << line << endl;
 				file.close();
-                // Send update messages
-                for(auto user : users){
-                    if(user == clientFd) continue;
-                    write(user, buffer, MSGSIZE);
+
+                // Send update messages to other users editing the same file
+                for(int i = 0; i < users.size(); ++i){
+                    if(i == userIndex) continue;
+                    else if(users[i].second == users[userIndex].second)
+                        write(users[i].first, buffer, MSGSIZE);
                 }
             }
 		}
 	}
 
     for(unsigned i = 0; i < users.size(); ++i){
-        if(users[i] == clientFd) users.erase(users.begin()+i);
+        if(users[i].first == clientFd) users.erase(users.begin()+i);
     }
     close(clientFd);
     pthread_exit(NULL);
@@ -148,7 +186,6 @@ int main(int argc, char *argv[]){
 		cerr << "Usage: server <port>\n";
 		return 1;
 	}
-	readFile();
 	stringstream stream(argv[1]);
 	int port;
 	stream >> port;
@@ -200,11 +237,11 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in cliAddr;
 	len = sizeof(cliAddr);
 	while (true){
-		users.push_back(accept(serverFd, (struct sockaddr *)&serverAddr, &len));
+		users.push_back(pair<int, string>(accept(serverFd, (struct sockaddr *)&serverAddr, &len), ""));
         cout << "# of connected users: " << users.size() << endl;
 		// Create thread to deal with client
 		pthread_t thread;
-		pthread_create(&thread, NULL, threadFunc, (void *)&users[users.size()-1]);
+		pthread_create(&thread, NULL, threadFunc, (void *)&users[users.size()-1].first);
 	}
 	return 0;
 }
