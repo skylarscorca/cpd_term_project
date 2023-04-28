@@ -65,7 +65,7 @@ static int serverFd;
 static pthread_t read_thread;
 
 /* Temporary File */
-char filename[20] = "transfer.cpp";
+static char filename[100] = "";
 
 /* Syntax highlight types */
 #define HL_NORMAL 0
@@ -1513,6 +1513,8 @@ int main(int argc, char **argv) {
 	}
 	printf("Connected\n");
 
+    sprintf(filename, "transfer%s", argv[3]); //get transfer file name
+    
     char fileGetter[128] = "get ";
     strncat(fileGetter, argv[3], 123);
     fileGetter[127] = '\n';
@@ -1525,7 +1527,7 @@ int main(int argc, char **argv) {
         printf("thread creation failed\n");
     }
     
-    // char buffer[1024] = {'g', 'e', 't', '\0'};
+    
     //start editor
 	initEditor();
     editorSelectSyntaxHighlight(filename);
