@@ -2,6 +2,7 @@ Kilo
 ===
 
 Kilo is a small text editor in less than 1K lines of code (counted with cloc).
+Original kilo: https://github.com/antirez/kilo
 
 A screencast is available here: https://asciinema.org/a/90r2i9bq8po03nazhqtsifksb
 
