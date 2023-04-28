@@ -77,12 +77,12 @@ void *threadFunc(void *args){
 			break;
 		}
 		else if (line.substr(0,4) == "get "){
-			cout << "Get Received" << endl;
             for(unsigned i = 0; i < users.size(); ++i){
                 if(users[i].first == clientFd){
                     users[i].second = line.substr(4);
                     readFile(users[i].second);
-                    sendFile(i);	
+                    sendFile(i);
+                    cout << "User " << i << " is opening " << users[i].second << endl;
                 }
             }
 			copied = true;
@@ -100,7 +100,6 @@ void *threadFunc(void *args){
             }
 
 			stringstream ss(line);
-			cout << line << endl;
 			//get update type
             bool validCMD = true;
             string cmd, row, col, text;
