@@ -2,15 +2,22 @@ Kilo
 ===
 
 Kilo is a small text editor in less than 1K lines of code (counted with cloc).
+Original kilo: https://github.com/antirez/kilo
 
 A screencast is available here: https://asciinema.org/a/90r2i9bq8po03nazhqtsifksb
 
 Usage: kilo `<filename>` (Depreciated for CPD project)
 
-Kilo Usage: kilo `<host>` `<port>` `<filename>`
 Server Usage: server `<port>`
 
-'get' to copy file from server
+Kilo Usage: kilo `<host>` `<port>` `<filename>`
+
+Server must be started before starting kilo. Multiple users may connect to the same file
+or different files.
+
+Test Files:
+- test - a simple text file with sample text
+- test.cpp - a simple c++ file to show syntax highlighting
 
 Editor Keys:
 
@@ -30,24 +37,18 @@ style CLI.
 Kilo was written by Salvatore Sanfilippo aka antirez and is released
 under the BSD 2 clause license.
 
-# cpd-term-project
+Concurrent Text File Editing
+===
+
 Term Project for COP5570
-Concurrent Text File Editing (Google Docs redev)
 
 Contributers:
 Skylar Scorca,
 Tony Drouillard,
 Jack Dewey
 
-Project Objectives (intended features)
-- Allow users to update a single text file simultaneously
-- Allow users to view the updates of other users in real-time
-- Handle the movement of a user’s cursor after an update is made
-- Handle transactions quickly and efficiently
-
-Optional Objectives: (if time allows)
-- Allow users to create and delete text files in a greater system of files
-- Allow users to modify the tree structure of the greater system of files
-- Allow users to view the updates to the file system in real-time
-
-
+Features added:
+- Added a server to receive and forward update commands
+- Kilo client connects to server and does not save the file locally
+- Kilo allows users to edit the file and view the edits of other users simultaneously
+- Server automatically saves the file contents for every update
